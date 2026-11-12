@@ -1,5 +1,7 @@
 # TBPower AS
 
+**Italiano** | [English](README.en.md)
+
 **TBPower AS** è un'app per la barra dei menu di macOS per i Mac **Apple Silicon**
 (M1, M2, M3, M4…): profili energetici, profilo automatico, **Anfetamina**, temperature,
 ventole (in lettura) e soprattutto un **limite di carica della batteria** che funziona
@@ -9,7 +11,6 @@ anche ad app chiusa.
 > **[TBPower (Intel)](https://github.com/tonybasspower/TBPower)**: turbo, GPU Radeon, ventole manuali.
 > Le due app sono separate e non vanno mescolate.
 
-*English summary at the bottom: [English](#english).*
 
 ---
 
@@ -27,7 +28,6 @@ anche ad app chiusa.
 10. [Sicurezza: cosa fa come root](#sicurezza-cosa-fa-come-root)
 11. [Donazione](#donazione)
 12. [Licenza e crediti](#licenza-e-crediti)
-13. [English](#english)
 
 ---
 
@@ -297,30 +297,3 @@ TBPower AS è gratuita. Se ti è utile, offrimi un caffè:
 - Dati del probe hardware: [`docs/probe-M1Pro.md`](docs/probe-M1Pro.md).
 - Non affiliato ad Apple. *Apple Silicon, Mac e macOS sono marchi di Apple Inc.*
 - Versione Intel: **[TBPower](https://github.com/tonybasspower/TBPower)**.
-
----
-
-## English
-
-**TBPower AS** is a menu-bar app for **Apple Silicon Macs** (macOS 13+): Power saving / Normal profiles
-(Low Power Mode), automatic battery/AC profile, **Amphetamine** stay-awake mode, lid-closed no-sleep with an
-external display, CPU/GPU/battery temperatures, read-only fan speeds, and a **battery charge limit**
-(50–100 %) that inhibits charging via SMC `CHTE` (fallback `CH0B`/`CH0C`) at the limit and re-enables it at
-limit − 2 %. A LaunchDaemon enforces it at boot and every 15 s, even when the app is closed. It backs off
-when `battery maintain` (actuallymentor) is running. Intel MacBook Pro? Use
-**[TBPower](https://github.com/tonybasspower/TBPower)**.
-
-```sh
-xcode-select --install                 # Command Line Tools (Swift 5.8+)
-cd ~ && git clone https://github.com/tonybasspower/TBPowerAS.git && cd TBPowerAS
-./build-app.sh                         # arm64 only, as a normal user
-sudo ./install-helper.sh 80            # helper, sudoers rule, LaunchDaemon, app → /Applications
-open "/Applications/TBPower AS.app"
-```
-
-- Installs `/Library/Application Support/TBPowerAS/` (helper, `uninstall.sh`, `config`),
-  `/etc/sudoers.d/tbpower-as` (NOPASSWD for the helper only) and `com.tbp.tbpower-as.chargelimit`.
-- Charging stuck: `sudo "/Library/Application Support/TBPowerAS/tbpower-as-helper" charge-pause 0`.
-- Uninstall: `sudo "/Library/Application Support/TBPowerAS/uninstall.sh"`.
-- Don't run battery, AlDente or batt at the same time; macOS *Optimized Battery Charging* can also hold charging.
-- Use at your own risk. MIT license. Donations: **[☕ Buy me a coffee (€2)](https://paypal.me/tonybasspower/2EUR)**.
