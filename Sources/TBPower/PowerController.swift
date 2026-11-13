@@ -71,7 +71,7 @@ final class PowerController: ObservableObject {
         }
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.refresh() }
+            Task { @MainActor [self] in self?.refresh() }
         }
     }
 
@@ -199,13 +199,14 @@ final class PowerController: ObservableObject {
                 if case .failure(let e) = Helper.run(step) { errors.append(e.description) }
             }
             let result = errors.joined(separator: "\n")
+            let ok = errors.isEmpty
             DispatchQueue.main.async {
                 self.pending -= 1
                 let b = self.pending > 0
                 if self.busy != b { self.busy = b }
                 let e: String? = result.isEmpty ? nil : result
                 if self.lastError != e { self.lastError = e }
-                completion?(errors.isEmpty)
+                completion?(ok)
                 if refreshAfter { self.refresh() }
             }
         }
