@@ -31,6 +31,7 @@ struct OptionsView: View {
     @AppStorage(BarPref.ramPercent) private var ramPercent = false
     @AppStorage(BarPref.gpuTemp) private var gpuTemp = false
     @AppStorage(BarPref.net) private var net = false
+    @AppStorage(BarPref.fanUnderTemp) private var fanUnderTemp = false
 
     var body: some View {
         Form {
@@ -40,13 +41,17 @@ struct OptionsView: View {
                 }
                 Toggle(L("Avvia al login"), isOn: Binding(get: { c.launchAtLogin }, set: { c.launchAtLogin = $0 }))
             }
-            Section(L("Barra dei menu")) {
+            Section(header: Text(L("Barra dei menu"))) {
                 Picker(L("Logo"), selection: $logoStyle) {
                     Text(L("Chip")).tag(LogoStyle.chip.rawValue)
                     Text(L("Mela TBP")).tag(LogoStyle.apple.rawValue)
                     Text(L("Nessuno")).tag(LogoStyle.none.rawValue)
                 }
                 Toggle(L("Temperatura CPU"), isOn: $cpuTemp)
+                if c.hw.fanCount > 0 {
+                    Toggle(L("Velocità ventole sotto la temperatura CPU (2 righe)"), isOn: $fanUnderTemp)
+                        .padding(.leading, 16)
+                }
                 Toggle(L("Utilizzo CPU %"), isOn: $cpuUsage)
                 Toggle(L("RAM usata"), isOn: $ram)
                 if ram {
@@ -57,10 +62,10 @@ struct OptionsView: View {
                 Toggle(L("Temperatura GPU"), isOn: $gpuTemp)
                 Toggle(L("Traffico di rete (download/upload)"), isOn: $net)
                 Text(L("Se tutto è spento resta visibile la mela."))
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundColor(.secondary)
             }
         }
-        .formStyle(.grouped)
+        .groupedFormStyle()
         .frame(width: 380)
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -70,6 +75,7 @@ struct OptionsView: View {
 struct MenuBarLabel: View {
     @ObservedObject var c: PowerController
     @ObservedObject var stats: SystemStats
+    // Le @AppStorage fanno ridisegnare l'etichetta quando cambiano le Opzioni.
     @AppStorage(BarPref.logoStyle) private var logoStyle = LogoStyle.initial
     @AppStorage(BarPref.cpuTemp) private var cpuTemp = true
     @AppStorage(BarPref.cpuUsage) private var cpuUsage = false
@@ -77,34 +83,70 @@ struct MenuBarLabel: View {
     @AppStorage(BarPref.ramPercent) private var ramPercent = false
     @AppStorage(BarPref.gpuTemp) private var gpuTemp = false
     @AppStorage(BarPref.net) private var net = false
+    @AppStorage(BarPref.fanUnderTemp) private var fanUnderTemp = false
 
     var body: some View {
         // MenuBarExtra mostra in modo affidabile solo un'immagine singola: componiamo
         // glifo + icona termica + testo in un'unica NSImage template (chiaro/scuro automatico).
-        Image(nsImage: MenuBarLabel.render(style: LogoStyle(rawValue: logoStyle) ?? .chip,
-                                           limiting: false, text: items.joined(separator: " ")))
+        Image(nsImage: MenuBarLabel.image(c: c, stats: stats))
     }
 
-    static func render(style: LogoStyle, limiting: Bool, text: String) -> NSImage {
+    /// Immagine della barra letta dalle preferenze correnti (usata anche dalla barra macOS 11/12).
+    @MainActor static func image(c: PowerController, stats: SystemStats) -> NSImage {
+        let d = UserDefaults.standard
+        func pref(_ k: String, _ def: Bool) -> Bool { d.object(forKey: k) == nil ? def : d.bool(forKey: k) }
+        let style = LogoStyle(rawValue: d.string(forKey: BarPref.logoStyle) ?? LogoStyle.initial) ?? .chip
+        var a: [String] = []
+        // Due righe "62° / 2400 rpm" solo se l'opzione è attiva e il Mac ha ventole.
+        var stacked: (String, String)? = nil
+        let fanRPM = c.sensors.fans.max()
+        if pref(BarPref.fanUnderTemp, false), c.hw.fanCount > 0 {
+            let t = c.sensors.cpuTemp.map { "\(Int($0.rounded()))°" } ?? "—"
+            stacked = (t, fanRPM.map { "\($0) rpm" } ?? "— rpm")
+        } else if pref(BarPref.cpuTemp, true), let t = c.sensors.cpuTemp {
+            a.append("\(Int(t.rounded()))°")
+        }
+        if pref(BarPref.cpuUsage, false), let u = stats.cpuPercent { a.append("\(Int(u.rounded()))%") }
+        if pref(BarPref.ram, false) {
+            let pct = pref(BarPref.ramPercent, false)
+            if pct, let p = stats.ramPercent { a.append("M\(Int(p.rounded()))%") }
+            else if !pct, let g = stats.ramUsedGB { a.append(String(format: "%.1fG", g)) }
+        }
+        if pref(BarPref.gpuTemp, false), let t = c.sensors.gpuTemp { a.append("G\(Int(t.rounded()))°") }
+        if pref(BarPref.net, false) { a.append("↓\(SystemStats.rate(stats.downBps)) ↑\(SystemStats.rate(stats.upBps))") }
+        return render(style: style, limiting: false, text: a.joined(separator: " "), stacked: stacked)
+    }
+
+    static func render(style: LogoStyle, limiting: Bool, text: String, stacked: (String, String)? = nil) -> NSImage {
         var glyph: NSImage? = nil
         switch style {
-        case .chip: glyph = TBPowerApp.chipGlyph
-        case .apple: glyph = TBPowerApp.appleGlyph
+        case .chip: glyph = Glyphs.chipGlyph
+        case .apple: glyph = Glyphs.appleGlyph
         case .none: glyph = nil
         }
-        if glyph == nil && text.isEmpty { glyph = TBPowerApp.chipGlyph ?? NSImage(systemSymbolName: "cpu", accessibilityDescription: "TBPower AS") }
+        if glyph == nil && text.isEmpty && stacked == nil {
+            glyph = Glyphs.chipGlyph ?? NSImage(systemSymbolName: "cpu", accessibilityDescription: "TBPower AS")
+        }
         var thermo: NSImage? = nil
         if limiting, let t = NSImage(systemSymbolName: "thermometer.sun.fill", accessibilityDescription: nil) {
             thermo = t.withSymbolConfiguration(.init(pointSize: 13, weight: .regular)) ?? t
         }
         let font = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .regular)
-        let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.black]
-        let str = NSAttributedString(string: text, attributes: attrs)
+        let str = NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: NSColor.black])
         let ts = text.isEmpty ? .zero : str.size()
+        // Blocco su due righe (font piccolo, come iStat/Stats).
+        let small = NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .medium)
+        let para = NSMutableParagraphStyle(); para.alignment = .right
+        let sAttrs: [NSAttributedString.Key: Any] = [.font: small, .foregroundColor: NSColor.black, .paragraphStyle: para]
+        let top = stacked.map { NSAttributedString(string: $0.0, attributes: sAttrs) }
+        let bottom = stacked.map { NSAttributedString(string: $0.1, attributes: sAttrs) }
+        let sw = max(top?.size().width ?? 0, bottom?.size().width ?? 0)
         let H: CGFloat = 22, gap: CGFloat = 4
-        var w: CGFloat = 0
-        for i in [glyph, thermo] { if let i = i { w += i.size.width + gap } }
-        w += ts.width; if text.isEmpty && w > 0 { w -= gap }
+        var parts: [CGFloat] = []
+        for i in [glyph, thermo] { if let i = i { parts.append(i.size.width) } }
+        if stacked != nil { parts.append(ceil(sw)) }
+        if !text.isEmpty { parts.append(ts.width) }
+        let w = parts.reduce(0, +) + gap * CGFloat(max(parts.count - 1, 0))
         let img = NSImage(size: NSSize(width: max(ceil(w), 1), height: H), flipped: false) { _ in
             var x: CGFloat = 0
             for i in [glyph, thermo] {
@@ -112,25 +154,21 @@ struct MenuBarLabel: View {
                 i.draw(in: NSRect(x: x, y: (H - i.size.height) / 2, width: i.size.width, height: i.size.height))
                 x += i.size.width + gap
             }
+            if let top = top, let bottom = bottom {
+                let lh = H / 2
+                top.draw(in: NSRect(x: x, y: lh - 1, width: ceil(sw), height: lh + 1))
+                bottom.draw(in: NSRect(x: x, y: -1, width: ceil(sw), height: lh + 1))
+                x += ceil(sw) + gap
+            }
             if !text.isEmpty { str.draw(at: NSPoint(x: x, y: (H - ts.height) / 2)) }
             return true
         }
         img.isTemplate = true
-        img.accessibilityDescription = text.isEmpty ? "TBPower AS" : "TBPower AS " + text
+        var desc = "TBPower AS"
+        if let s = stacked { desc += " \(s.0) \(s.1)" }
+        if !text.isEmpty { desc += " " + text }
+        img.accessibilityDescription = desc
         return img
-    }
-
-    private var items: [String] {
-        var a: [String] = []
-        if cpuTemp, let t = c.sensors.cpuTemp { a.append("\(Int(t.rounded()))°") }
-        if cpuUsage, let u = stats.cpuPercent { a.append("\(Int(u.rounded()))%") }
-        if ram {
-            if ramPercent, let p = stats.ramPercent { a.append("M\(Int(p.rounded()))%") }
-            else if !ramPercent, let g = stats.ramUsedGB { a.append(String(format: "%.1fG", g)) }
-        }
-        if gpuTemp, let t = c.sensors.gpuTemp { a.append("G\(Int(t.rounded()))°") }
-        if net { a.append("↓\(SystemStats.rate(stats.downBps)) ↑\(SystemStats.rate(stats.upBps))") }
-        return a
     }
 }
 

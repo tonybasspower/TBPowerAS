@@ -17,7 +17,7 @@ even when the app is closed.
 
 1. [Features](#features)
 2. [How the charge limit works](#how-the-charge-limit-works)
-3. [Requirements](#requirements)
+3. [Requirements](#requirements) · [Compatibility](#compatibility)
 4. [Download and build](#download-and-build)
 5. [Installation (helper, sudo once)](#installation)
 6. [Launch](#launch)
@@ -80,13 +80,33 @@ Who applies the rule:
 
 ## Requirements
 
-- **Apple Silicon** Mac (arm64), macOS **13 Ventura or later**.
-- Xcode **Command Line Tools** (Swift 5.8+). Full Xcode is **not** required:
+- **Apple Silicon** Mac (arm64), macOS **11 Big Sur or later** (see [Compatibility](#compatibility)).
+- Xcode **Command Line Tools** (Swift 5.5+; tested with 6.1.2). Full Xcode is **not** required:
   ```sh
   xcode-select --install
   ```
 - An administrator account (`sudo` is needed **once**, for the helper).
 - **No other charge limiter running** (battery, AlDente, batt…): see [Troubleshooting](#troubleshooting).
+
+## Compatibility
+
+TBPower AS detects the hardware **at launch** and hides whatever the Mac doesn't have: no crashes,
+no retry loops. Any **Apple Silicon** Mac (M1, M2, M3, M4 and their Pro/Max/Ultra variants) running
+macOS **11 Big Sur or later**.
+
+| Feature | Works on | If missing |
+|---|---|---|
+| Menu bar | macOS 13+ via `MenuBarExtra`; macOS 11–12 via a classic status item + popover | — |
+| Launch at login | macOS 13+ `SMAppService`; macOS 11–12 user LaunchAgent (`~/Library/LaunchAgents/com.tbp.tbpower-as.login.plist`) | — |
+| Charge limit (pause at threshold) | SMC with `CHTE` (recent firmware, preferred) or `CH0B`/`CH0C` (older firmware) | *Charge limit not supported on this Mac* line |
+| Fans (read-only, 2-line menu bar) | Macs with fans (`FNum` > 0): MacBook Pro, Mac mini, iMac, Mac Studio | Section and options hidden (fanless MacBook Air) |
+| CPU/GPU temperatures | SMC keys for M1 (`Tp0x`/`Tg0x`), M2 (`Tp1x`, `Tg0f/j`), M3 (`Te0x`/`Tf0x`, `Tf1x/2x`), M4 (`Te0x`/`Tp0x`, `Tg0x/1x`): the hottest is used | Shows "—" |
+| Low power (`lowpowermode`) | macOS 12+ (Macs exposing it in `pmset`) | Ignored by the profiles |
+| Amphetamine, auto profile, stats | All | — |
+
+Tested on a **14" MacBook Pro M1 Pro** (macOS 15.3.1, Swift 6.1.2), also with the macOS 11/12 UI forced
+via `TBPOWER_LEGACY_UI=1`. M2/M3/M4, MacBook Air and real macOS 11/12: supported by the detection but
+not yet tested on those machines.
 
 ## Download and build
 
@@ -194,7 +214,8 @@ leave the adapter plugged in and check that the menu shows *SMC charge inhibit i
 **About** — version, license, *Project website*, *☕ Buy me a coffee*.
 
 **Footer** — ⚙︎ *Options* (language, launch at login, what to show in the menu bar: Chip / TBP apple / None logo,
-CPU temp, CPU %, RAM in GB or %, GPU temp, network) and *Quit*. On quit, sleep and Amphetamine return to normal;
+CPU temp, CPU %, RAM in GB or %, GPU temp, network and, on Macs with fans, *Fan speed below the CPU
+temperature* — two compact lines like `62°` / `2400 rpm`, fastest fan, off by default) and *Quit*. On quit, sleep and Amphetamine return to normal;
 the charge limit stays active thanks to the daemon.
 
 ## Complete uninstall

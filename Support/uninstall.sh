@@ -32,6 +32,10 @@ echo "==> sudoers"
 rm -f /etc/sudoers.d/tbpower-as
 
 echo "==> Files"
+# Avvio al login su macOS 11/12 (LaunchAgent dell'utente che ha lanciato sudo).
+if [ -n "${SUDO_USER:-}" ]; then
+  rm -f "$(eval echo "~$SUDO_USER")/Library/LaunchAgents/com.tbp.tbpower-as.login.plist"
+fi
 rm -rf "$APP"
 # La cartella di supporto per ultima (può contenere questo script).
 rm -rf "$DIR"

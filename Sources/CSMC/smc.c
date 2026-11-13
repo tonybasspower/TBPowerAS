@@ -33,7 +33,7 @@ static int valid_key(const char *key) { return key != NULL && strlen(key) == 4; 
 int smc_open(smc_conn_t *conn) {
     if (!conn) return -1;
     *conn = 0;
-    io_service_t svc = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSMC"));
+    io_service_t svc = IOServiceGetMatchingService(MACH_PORT_NULL /* default, macOS 11+ */, IOServiceMatching("AppleSMC"));
     if (!svc) return -2;
     io_connect_t c = 0;
     kern_return_t kr = IOServiceOpen(svc, mach_task_self(), 0, &c);

@@ -18,7 +18,7 @@ anche ad app chiusa.
 
 1. [Funzioni](#funzioni)
 2. [Come funziona il limite di carica](#come-funziona-il-limite-di-carica)
-3. [Requisiti](#requisiti)
+3. [Requisiti](#requisiti) · [Compatibilità](#compatibilità)
 4. [Scaricare e compilare](#scaricare-e-compilare)
 5. [Installazione (helper, una sola volta con sudo)](#installazione)
 6. [Avvio](#avvio)
@@ -81,13 +81,33 @@ Chi applica la regola:
 
 ## Requisiti
 
-- Mac **Apple Silicon** (arm64), macOS **13 Ventura o successivo**.
-- **Command Line Tools** di Xcode (Swift 5.8+). Xcode completo **non** serve:
+- Mac **Apple Silicon** (arm64), macOS **11 Big Sur o successivo** (vedi [Compatibilità](#compatibilità)).
+- **Command Line Tools** di Xcode (Swift 5.5+; provata con 6.1.2). Xcode completo **non** serve:
   ```sh
   xcode-select --install
   ```
 - Un account amministratore (serve `sudo` **una sola volta** per l'helper).
 - **Nessun altro limitatore di carica attivo** (battery, AlDente, batt…): vedi [Risoluzione problemi](#risoluzione-problemi).
+
+## Compatibilità
+
+TBPower AS rileva l'hardware **all'avvio** e nasconde ciò che il Mac non ha: niente crash, niente
+tentativi ripetuti. Tutti i Mac **Apple Silicon** (M1, M2, M3, M4 e varianti Pro/Max/Ultra) con
+macOS **11 Big Sur o successivo**.
+
+| Funzione | Dove funziona | Se manca |
+|---|---|---|
+| Barra dei menu | macOS 13+ con `MenuBarExtra`; macOS 11–12 con icona classica + popover | — |
+| Avvio al login | macOS 13+ `SMAppService`; macOS 11–12 LaunchAgent utente (`~/Library/LaunchAgents/com.tbp.tbpower-as.login.plist`) | — |
+| Limite di carica (pausa a soglia) | SMC con `CHTE` (firmware recenti, preferita) oppure `CH0B`/`CH0C` (firmware più vecchi) | Riga *Limite di carica non supportato su questo Mac* |
+| Ventole (sola lettura, 2 righe in barra) | Mac con ventole (`FNum` > 0): MacBook Pro, Mac mini, iMac, Mac Studio | Sezione e opzioni nascoste (MacBook Air fanless) |
+| Temperature CPU/GPU | Chiavi SMC per M1 (`Tp0x`/`Tg0x`), M2 (`Tp1x`, `Tg0f/j`), M3 (`Te0x`/`Tf0x`, `Tf1x/2x`), M4 (`Te0x`/`Tp0x`, `Tg0x/1x`): si usa la più calda | Mostra "—" |
+| Basso consumo (`lowpowermode`) | macOS 12+ (Mac che lo espongono in `pmset`) | Ignorato dai profili |
+| Anfetamina, profilo automatico, statistiche | Tutti | — |
+
+Provata su **MacBook Pro 14" M1 Pro** (macOS 15.3.1, Swift 6.1.2), anche con l'interfaccia macOS 11/12
+forzata via `TBPOWER_LEGACY_UI=1`. M2/M3/M4, MacBook Air e macOS 11/12 reali: supportati dal
+rilevamento ma non ancora provati su quelle macchine.
 
 ## Scaricare e compilare
 
@@ -195,7 +215,8 @@ lascia l'alimentatore collegato e controlla che nel menu compaia *Inibizione car
 **Info** — versione, licenza, *Sito del progetto*, *☕ Offrimi un caffè*.
 
 **Piede** — ⚙︎ *Opzioni* (lingua, avvio al login, cosa mostrare nella barra: logo chip / mela TBP / nessuno,
-temp. CPU, CPU %, RAM in GB o %, temp. GPU, rete) ed *Esci*. Uscendo, stop e Anfetamina tornano normali;
+temp. CPU, CPU %, RAM in GB o %, temp. GPU, rete e, sui Mac con ventole, *Velocità ventole sotto la
+temperatura CPU* — due righe compatte tipo `62°` / `2400 rpm`, ventola più veloce, spenta di default) ed *Esci*. Uscendo, stop e Anfetamina tornano normali;
 il limite di carica resta attivo grazie al daemon.
 
 ## Disinstallazione completa

@@ -1,9 +1,9 @@
-// swift-tools-version:5.8
+// swift-tools-version:5.5
 import PackageDescription
 
 let package = Package(
     name: "TBPowerAS",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS(.v11)],
     products: [
         .executable(name: "TBPowerAS", targets: ["TBPowerAS"]),
         .executable(name: "tbpower-as-helper", targets: ["tbpower-as-helper"]),

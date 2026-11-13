@@ -104,6 +104,10 @@ private let english: [String: String] = [
     "Temperatura GPU": "GPU temperature",
     "Traffico di rete (download/upload)": "Network traffic (download/upload)",
     "Se tutto è spento resta visibile la mela.": "If everything is off, the apple stays visible.",
+    "Solo con monitor esterno collegato.": "Only with an external display connected.",
+    "Ventole in sola lettura: controllo manuale non ancora verificato.": "Fans are read-only: manual control not verified yet.",
+    "Limite di carica non supportato su questo Mac": "Charge limit not supported on this Mac",
+    "Velocità ventole sotto la temperatura CPU (2 righe)": "Fan speed below the CPU temperature (2 lines)",
     // Errori
     "Helper non installato: reinstalla TBPower o esegui `sudo ./install-helper.sh`.": "Helper not installed: reinstall TBPower or run `sudo ./install-helper.sh`.",
     "Regola sudoers mancante: reinstalla TBPower o esegui `sudo ./install-helper.sh`.": "Missing sudoers rule: reinstall TBPower or run `sudo ./install-helper.sh`.",

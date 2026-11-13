@@ -1,6 +1,6 @@
 #!/bin/bash
 # Compila TBPower AS.app e tbpower-as-helper (come utente normale, NON con sudo).
-# Richiede gli Strumenti a riga di comando di Xcode (Swift 5.8+).
+# Richiede gli Strumenti a riga di comando di Xcode (Swift 5.5+, macOS 11+).
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -11,10 +11,10 @@ build_direct() {
   local out="build/swiftc" sdk
   sdk="$(xcrun --sdk macosx --show-sdk-path)"
   rm -rf "$out"; mkdir -p "$out/obj" "$out/CSMC"
-  local flags=(-O -swift-version 5 -sdk "$sdk" -target arm64-apple-macos13.0 -I "$out/CSMC")
-  clang -c -O2 -target arm64-apple-macos13.0 -isysroot "$sdk" \
+  local flags=(-O -swift-version 5 -sdk "$sdk" -target arm64-apple-macos11.0 -I "$out/CSMC")
+  clang -c -O2 -target arm64-apple-macos11.0 -isysroot "$sdk" \
     -I Sources/CSMC/include Sources/CSMC/smc.c -o "$out/obj/smc.o"
-  clang -c -O2 -target arm64-apple-macos13.0 -isysroot "$sdk" \
+  clang -c -O2 -target arm64-apple-macos11.0 -isysroot "$sdk" \
     -I Sources/CSMC/include Sources/CSMC/charge.c -o "$out/obj/charge.o"
   printf 'module CSMC {\n  header "%s"\n  export *\n}\n' \
     "$PWD/Sources/CSMC/include/smc.h" > "$out/CSMC/module.modulemap"

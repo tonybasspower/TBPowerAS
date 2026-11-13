@@ -23,7 +23,7 @@
 		<string>arm64</string>
 	</array>
 	<key>LSMinimumSystemVersion</key>
-	<string>13.0</string>
+	<string>11.0</string>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSHighResolutionCapable</key>

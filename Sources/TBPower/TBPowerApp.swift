@@ -1,6 +1,10 @@
 import SwiftUI
+import AppKit
 
-@main
+#if compiler(>=5.7)
+
+/// UI per macOS 13+ (MenuBarExtra). Il punto di ingresso è TBPowerMain (Compat.swift).
+@available(macOS 13.0, *)
 struct TBPowerApp: App {
     @StateObject private var controller = PowerController()
     @StateObject private var stats = SystemStats()
@@ -17,6 +21,10 @@ struct TBPowerApp: App {
         .menuBarExtraStyle(.window)
     }
 
+}
+#endif
+
+enum Glyphs {
     /// Glifi template monocromatici (macOS li colora per barra chiara/scura), alti 18 pt.
     static let appleGlyph: NSImage? = glyph("MenuBarIcon")
     static let chipGlyph: NSImage? = glyph("MenuBarChip")

@@ -23,9 +23,22 @@ struct SensorSnapshot: Equatable {
 
 /// Letture non privilegiate (SMC in sola lettura, IOPowerSources, Metal).
 enum Sensors {
-    // Chiavi M1 Pro verificate in sola lettura: massimo dei sensori CPU/GPU disponibili.
-    static let cpuKeys = ["Tp01", "Tp05", "Tp09", "Tp0D", "Tp0T"]
-    static let gpuKeys = ["Tg05", "Tg0D"]
+    // Massimo dei sensori disponibili. Le chiavi cambiano da chip a chip: quelle assenti
+    // falliscono la lettura e vengono ignorate (verificate su M1 Pro; M1/M2/M3/M4 dalle
+    // tabelle pubbliche di Stats). Nessun sensore valido = "—" nel menu.
+    static let cpuKeys = [
+        "Tp01", "Tp05", "Tp09", "Tp0D", "Tp0H", "Tp0L", "Tp0P", "Tp0T", "Tp0X", "Tp0b",   // M1
+        "Tp1h", "Tp1t", "Tp1p", "Tp1l", "Tp0f", "Tp0j",                                   // M2
+        "Te05", "Te0L", "Te0P", "Te0S", "Tf04", "Tf09", "Tf0A", "Tf0B", "Tf0D", "Tf0E",   // M3
+        "Tf44", "Tf49", "Tf4A", "Tf4B", "Tf4D", "Tf4E",
+        "Te09", "Te0H", "Tp0V", "Tp0Y", "Tp0e",                                           // M4
+    ]
+    static let gpuKeys = [
+        "Tg05", "Tg0D", "Tg0L", "Tg0T",                                                   // M1
+        "Tg0f", "Tg0j",                                                                   // M2
+        "Tf14", "Tf18", "Tf19", "Tf1A", "Tf24", "Tf28", "Tf29", "Tf2A",                   // M3
+        "Tg0G", "Tg0H", "Tg1U", "Tg1k", "Tg0K", "Tg0d", "Tg0e", "Tg0k",                   // M4
+    ]
     static let batteryKeys = ["TB0T", "TB1T", "TB2T"]
 
     static func read() -> SensorSnapshot {

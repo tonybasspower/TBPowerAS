@@ -101,4 +101,6 @@ final class SystemStats: ObservableObject {
 enum BarPref {
     static let logo = "bar.logo", logoStyle = "bar.logoStyle", cpuTemp = "bar.cpuTemp", cpuUsage = "bar.cpuUsage"
     static let ram = "bar.ram", ramPercent = "bar.ramPercent", gpuTemp = "bar.gpuTemp", net = "bar.net"
+    /// Velocità ventole sotto la temperatura CPU (due righe); default spento, solo Mac con ventole.
+    static let fanUnderTemp = "bar.fanUnderTemp"
 }

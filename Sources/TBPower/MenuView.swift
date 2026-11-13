@@ -12,46 +12,70 @@ struct MenuView: View {
     static var installCmd: String { "cd ~/TBPowerAS && sudo ./install-helper.sh 93" }
 
     var body: some View {
+        // Max 10 figli per blocco ViewBuilder: Swift 5.8 (macOS 13) non ha i parameter pack.
         VStack(alignment: .leading, spacing: 8) {
-            header
-            warnings
-            amphetamineBox
-            statusRow
-            bigToggle(L("Coperchio chiuso: non andare in stop"), "laptopcomputer", .subheadline,
-                      Binding(get: { c.lidClosedNoSleep }, set: { c.setLidClosedNoSleep($0) }))
-                .disabled(c.busy || !c.helperInstalled)
-            Text("Solo con monitor esterno collegato.").font(.caption2).foregroundStyle(.secondary)
-            profiles
-            if c.hw.fanCount > 0 {
-                Divider()
-                HStack {
-                    Label(L("Ventole"), systemImage: "fanblades").font(.subheadline.weight(.semibold))
-                    Spacer()
-                    Text(c.sensors.fans.isEmpty ? "—" : c.sensors.fans.map { "\($0)" }.joined(separator: " / ") + " " + L("giri"))
-                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                }
-                Text("Ventole in sola lettura: controllo manuale non ancora verificato.")
-                    .font(.caption2).foregroundStyle(.secondary)
-            }
-            if c.hw.chargeLimitSupported {
-                Divider()
-                Label(L("Batteria"), systemImage: "battery.100.bolt").font(.subheadline.weight(.semibold))
-                HStack(spacing: 6) {
-                    Text(L("Limite di carica")).font(.caption)
-                    chargeControls
-                }
-            }
-            Divider()
-            section(L("Info"), "info.circle", $openInfo) { infoControls }
-            if let e = c.lastError {
-                Text(e).font(.caption2).foregroundStyle(.orange).lineLimit(2)
-                    .help(e)
-            }
-            Divider()
-            footer
+            topSection
+            fanSection
+            batterySection
+            bottomSection
         }
         .padding(12)
         .frame(width: Self.width, alignment: .leading)
+    }
+
+    // MARK: Sezioni del menu
+
+    @ViewBuilder private var topSection: some View {
+        header
+        warnings
+        amphetamineBox
+        statusRow
+        bigToggle(L("Coperchio chiuso: non andare in stop"), "laptopcomputer", .subheadline,
+                  Binding(get: { c.lidClosedNoSleep }, set: { c.setLidClosedNoSleep($0) }))
+            .disabled(c.busy || !c.helperInstalled)
+        Text(L("Solo con monitor esterno collegato.")).font(.caption2).foregroundColor(.secondary)
+        profiles
+    }
+
+    /// Solo Mac con ventole (FNum > 0): sui MacBook Air (fanless) non compare.
+    @ViewBuilder private var fanSection: some View {
+        if c.hw.fanCount > 0 {
+            Divider()
+            HStack {
+                Label(L("Ventole"), systemImage: "fanblades").font(.subheadline.weight(.semibold))
+                Spacer()
+                Text(c.sensors.fans.isEmpty ? "—" : c.sensors.fans.map { "\($0)" }.joined(separator: " / ") + " " + L("giri"))
+                    .font(.caption.monospacedDigit()).foregroundColor(.secondary)
+            }
+            Text(L("Ventole in sola lettura: controllo manuale non ancora verificato."))
+                .font(.caption2).foregroundColor(.secondary)
+        }
+    }
+
+    /// Solo se lo SMC espone un comando di blocco carica (CHTE o CH0B/CH0C).
+    @ViewBuilder private var batterySection: some View {
+        Divider()
+        if c.hw.chargeLimitSupported {
+            Label(L("Batteria"), systemImage: "battery.100.bolt").font(.subheadline.weight(.semibold))
+            HStack(spacing: 6) {
+                Text(L("Limite di carica")).font(.caption)
+                chargeControls
+            }
+        } else {
+            Label(L("Limite di carica non supportato su questo Mac"), systemImage: "battery.100")
+                .font(.caption).foregroundColor(.secondary)
+        }
+    }
+
+    @ViewBuilder private var bottomSection: some View {
+        Divider()
+        section(L("Info"), "info.circle", $openInfo) { infoControls }
+        if let e = c.lastError {
+            Text(e).font(.caption2).foregroundColor(.orange).lineLimit(2)
+                .help(e)
+        }
+        Divider()
+        footer
     }
 
     // MARK: Intestazione e stato
@@ -83,16 +107,16 @@ struct MenuView: View {
                       systemImage: "exclamationmark.triangle.fill")
                     .font(.caption).lineLimit(1)
             }
-            .buttonStyle(.plain).foregroundStyle(.orange)
+            .buttonStyle(.plain).foregroundColor(.orange)
             .help(Self.installCmd)
         }
         if c.macsFanControlRunning {
             Label(L("Stats / controllo ventole attivo: può interferire"), systemImage: "exclamationmark.triangle")
-                .font(.caption).foregroundStyle(.orange).lineLimit(1)
+                .font(.caption).foregroundColor(.orange).lineLimit(1)
         }
         if c.amphetamine {
             Label(L("Anfetamina attiva: schermo e dischi senza stop"), systemImage: "pills.fill")
-                .font(.caption.weight(.semibold)).foregroundStyle(.pink).lineLimit(1)
+                .font(.caption.weight(.semibold)).foregroundColor(.pink).lineLimit(1)
         }
     }
 
@@ -122,7 +146,7 @@ struct MenuView: View {
             bigToggle(L("Anfetamina"), "pills.fill", .headline,
                       Binding(get: { c.amphetamine }, set: { c.setAmphetamine($0) }))
             Text(L("Schermo acceso e dischi senza stop: le copie non si interrompono."))
-                .font(.caption2).foregroundStyle(.secondary)
+                .font(.caption2).foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .disabled(c.busy || !c.helperInstalled)
@@ -151,7 +175,7 @@ struct MenuView: View {
                 Spacer()
                 Label(c.powerSource == .battery ? L("A batteria") : L("Con alimentatore"),
                       systemImage: c.powerSource == .battery ? "battery.75" : "powerplug.fill")
-                    .font(.caption2).foregroundStyle(.secondary)
+                    .font(.caption2).foregroundColor(.secondary)
             }
             HStack(spacing: 4) {
                 ForEach(Profile.allCases) { p in
@@ -165,7 +189,7 @@ struct MenuView: View {
                             if let sub = p.buttonSubtitle {
                                 Text(sub)
                                     .font(.system(size: 9))
-                                    .foregroundStyle(.secondary)
+                                    .foregroundColor(.secondary)
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.7)
                             }
@@ -175,7 +199,7 @@ struct MenuView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.mini)
-                    .tint(c.profile == p ? .accentColor : .gray)
+                    .tintCompat(c.profile == p ? .accentColor : .gray)
                     .disabled(c.busy || !c.helperInstalled)
                     .help(p.detail(for: c.hw))
                 }
@@ -233,16 +257,16 @@ struct MenuView: View {
             }
             if let conflict = c.chargeConflict {
                 Text(LF("Carica gestita da un altro tool (%@): TBPower AS non interviene. Disattivalo per usare questo limite.", conflict))
-                    .font(.caption2).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
+                    .font(.caption2).foregroundColor(.orange).fixedSize(horizontal: false, vertical: true)
             } else if let e = c.chargeError {
-                Text(e).font(.caption2).foregroundStyle(.orange)
+                Text(e).font(.caption2).foregroundColor(.orange)
             }
             if c.chargePaused {
                 Label(L("Inibizione carica SMC attiva"), systemImage: "pause.circle.fill")
-                    .font(.caption2).foregroundStyle(.orange)
+                    .font(.caption2).foregroundColor(.orange)
             } else if !c.helperSupportsChargePause, c.helperInstalled {
                 Text(L("Aggiorna l'helper per la pausa carica a soglia"))
-                    .font(.caption2).foregroundStyle(.orange)
+                    .font(.caption2).foregroundColor(.orange)
             }
         }
         .help(LF("Limite %d%%. Inibizione SMC a soglia; ripresa sotto limite−2. Controllo anche senza app tramite daemon.", Int(c.chargeLimitDraft)))
@@ -265,7 +289,7 @@ struct MenuView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(LF("Versione %@", AppInfo.version)).font(.caption)
             Text(L("Licenza MIT · Apple Silicon · ventole in sola lettura"))
-                .font(.caption2).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                .font(.caption2).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 12) {
                 if let u = AppInfo.projectURL { Link(L("Sito del progetto"), destination: u).font(.caption) }
                 if let u = AppInfo.donationURL { Link(L("Offrimi un caffè"), destination: u).font(.caption) }
@@ -284,7 +308,7 @@ struct MenuView: View {
 
     private func stat(_ k: String, _ v: String?) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(k).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            Text(k).font(.caption2).foregroundColor(.secondary).lineLimit(1)
             Text(v ?? "—").font(.caption.monospacedDigit()).lineLimit(1)
         }
     }
@@ -293,10 +317,10 @@ struct MenuView: View {
         HStack(spacing: 4) {
             Image(systemName: icon)
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundColor(.secondary)
                 .frame(width: 12)
             VStack(alignment: .leading, spacing: 0) {
-                Text(k).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                Text(k).font(.caption2).foregroundColor(.secondary).lineLimit(1)
                 Text(v ?? "—").font(.caption.monospacedDigit()).lineLimit(1)
             }
         }

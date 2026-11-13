@@ -170,7 +170,7 @@ final class PowerController: ObservableObject {
         pausePending = true
         lastChargeRequest = want
         perform([["charge-pause", want ? "1" : "0"]], refreshAfter: false) { [weak self] ok in
-            guard let self else { return }
+            guard let self = self else { return }
             self.pausePending = false
             if ok {
                 self.chargeFailures = 0
@@ -211,11 +211,9 @@ final class PowerController: ObservableObject {
         }
     }
     var launchAtLogin: Bool {
-        get { SMAppService.mainApp.status == .enabled }
+        get { LoginItem.isEnabled }
         set {
-            do {
-                if newValue { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
-            } catch { lastError = error.localizedDescription }
+            do { try LoginItem.set(newValue) } catch { lastError = error.localizedDescription }
             objectWillChange.send()
         }
     }
